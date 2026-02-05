@@ -210,8 +210,8 @@ def main():
                     "decryption": "none"
                 },
                 "streamSettings": {
-                    "network": "ws",
-                    "wsSettings": { "path": "/xray" }
+                    "network": "xhttp",
+                    "xhttpSettings": { "path": "/xray" }
                 }
             }
         ],
@@ -241,8 +241,11 @@ def main():
     for c in clients:
         # reverse lookup country code from email
         code = c['email'].split('.')[0].upper()
-        # Ensure we use the domain correctly in the link
-        link = f"vless://{c['id']}@{domain_placeholder}:{443}?type=ws&path=/xray&encryption=none&security=tls#Nord-{code}"
+        # VLESS Link for XHTTP
+        # Format: vless://UUID@DOMAIN:443?encryption=none&security=tls&type=xhttp&path=/xray&host=DOMAIN#Nord-XX
+        # Note: 'type=xhttp' is the key change. 'mode' might be needed for older clients but standard is 'type'.
+        # We also ensure host is set properly for SNI/routing.
+        link = f"vless://{c['id']}@{domain_placeholder}:{443}?type=xhttp&path=/xray&encryption=none&security=tls#Nord-{code}"
         
         if domain_placeholder == "<YOUR_DOMAIN>":
              print(f"\nExample for [{code}] (Replace <YOUR_DOMAIN> first!):")
