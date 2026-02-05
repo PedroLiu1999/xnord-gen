@@ -49,6 +49,7 @@ Once you have generated your `config.json`, you can deploy Xray manually or use 
 
 ### 📚 Documentation
 - [**Cloudflare Tunnel Setup Guide**](docs/cloudflared-setup.md): Complete instructions on setting up a secure tunnel.
+- [**Triggering Automated Builds**](docs/triggering-builds.md): Guide on GitHub Actions builds.
 - [**Docker Compose Example**](examples/docker-compose.yml): a ready-to-use Compose file for running Xray and Cloudflared together.
 
 ### Manual Run
