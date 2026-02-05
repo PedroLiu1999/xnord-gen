@@ -16,7 +16,7 @@ def get_all_countries():
         print(f"Error fetching countries: {e}")
         sys.exit(1)
 
-def get_nordvpn_server_details(preferred_country_code=None, country_id=None):
+def get_nordvpn_server_details(country_id=None):
     """
     Fetches the recommended NordVPN server.
     Uses country_id if provided (more reliable for the API).
@@ -105,14 +105,12 @@ def main():
     
     # Filter countries
     target_countries = []
-    if nord_countries_env and nord_countries_env.upper() != "ALL":
+    if nord_countries_env:
         wanted_codes = [c.strip().upper() for c in nord_countries_env.split(',')]
         print(f"Filtering for countries: {wanted_codes}")
         for c in all_countries:
             if c['code'].upper() in wanted_codes:
                 target_countries.append(c)
-    else:
-        target_countries = all_countries
         
     if not target_countries:
         print("No matching countries found based on your filter.")
