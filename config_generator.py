@@ -105,12 +105,19 @@ def main():
     
     # Filter countries
     target_countries = []
-    if nord_countries_env:
-        wanted_codes = [c.strip().upper() for c in nord_countries_env.split(',')]
-        print(f"Filtering for countries: {wanted_codes}")
-        for c in all_countries:
-            if c['code'].upper() in wanted_codes:
-                target_countries.append(c)
+    if not nord_countries_env:
+        print("\n" + "!" * 60)
+        print("ERROR: NORD_COUNTRIES is missing.")
+        print("!" * 60)
+        print("You must provide a list of country codes (e.g., 'US,JP,UK').")
+        print("We no longer default to 'ALL' to prevent abuse/excessive API usage.")
+        sys.exit(1)
+
+    wanted_codes = [c.strip().upper() for c in nord_countries_env.split(',')]
+    print(f"Filtering for countries: {wanted_codes}")
+    for c in all_countries:
+        if c['code'].upper() in wanted_codes:
+            target_countries.append(c)
         
     if not target_countries:
         print("No matching countries found based on your filter.")
@@ -216,7 +223,10 @@ def main():
         }
     }
     
-    with open("config.json", "w") as f:
+    # Ensure directory exists
+    os.makedirs("/app/config", exist_ok=True)
+    
+    with open("/app/config/config.json", "w") as f:
         json.dump(config, f, indent=4)
         
     print("\n✅ Xray configuration generated: config.json")
