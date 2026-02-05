@@ -18,30 +18,50 @@ This tool generates a comprehensive **Xray** configuration file designed to sit 
 
 ## Quick Start
 
-### 1. Build the Tool
+### 1. Pull the Image
+We recommend using the pre-built image from GitHub Container Registry (supports AMD64 & ARM64).
+
 ```bash
-docker build -t xray-gen .
+docker pull ghcr.io/pedroliu1999/xnord-gen:latest
 ```
 
 ### 2. Get Your NordVPN Private Key
 You need your specific **WireGuard Private Key**.
 - **If you have a NordVPN Access Token** (from Dashboard -> Access Token):
   ```bash
-  docker run --rm xray-gen fetch-nord-key <YOUR_TOKEN>
+  docker run --rm ghcr.io/pedroliu1999/xnord-gen:latest fetch-nord-key <YOUR_TOKEN>
   ```
   *Copy the key output from this command.*
 
 - **If you don't have a token**, create one in the NordVPN dashboard or extract the key from a running Linux client (`wg show nordlynx private-key`).
 
 ### 3. Generate Configuration
-Run the generator with your key. It will fetch the latest server list and build `config.json`.
+Run the generator. You **must** specify the countries you want (e.g., `US,JP`).
+The config will be saved to `config.json`.
 
 ```bash
-docker run --rm -v $(pwd):/app \
+# Create a folder for the config
+mkdir -p config
+
+docker run --rm \
+    -v $(pwd):/app/config \
     -e NORD_PRIVATE_KEY="<YOUR_PRIVATE_KEY>" \
-    -e XRAY_DOMAIN="example.com" \
-    xray-gen
+    -e NORD_COUNTRIES="US,JP" \
+    -e XRAY_DOMAIN="yourdomain.com" \
+    ghcr.io/pedroliu1999/xnord-gen:latest
 ```
+
+### 4. Run Xray
+Use the generated configuration to run the Xray server.
+
+```bash
+docker run -d --name xray \
+    -v $(pwd)/config/config.json:/etc/xray/config.json \
+    -p 10000:10000 \
+    ghcr.io/xtls/xray-core
+```
+
+---
 
 ## Deployment Guide
 
@@ -67,9 +87,19 @@ docker run -d --name xray \
 | Environment Variable | Description | Default |
 |----------------------|-------------|---------|
 | `NORD_PRIVATE_KEY`   | **Required**. Your NordLynx Private Key. | N/A |
-| `NORD_COUNTRIES`     | Comma-separated list of country codes (e.g., `US,JP,UK`) to generate. | `ALL` |
+| `NORD_COUNTRIES`     | **Required**. Comma-separated list of country codes (e.g., `US,JP`). | N/A |
 | `XRAY_DOMAIN`        | The domain used in the generated VLESS links. | `<YOUR_DOMAIN>` |
 | `XRAY_PORT`          | The inbound listening port for Xray. | `10000` |
+
+---
+
+## Build Locally (Optional)
+If you prefer to build the image yourself:
+
+```bash
+docker build -t xnord-gen .
+docker run --rm -v $(pwd)/config:/app/config ... xnord-gen
+```
 
 ## Output Format
 

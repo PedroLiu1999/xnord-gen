@@ -110,7 +110,6 @@ def main():
         print("ERROR: NORD_COUNTRIES is missing.")
         print("!" * 60)
         print("You must provide a list of country codes (e.g., 'US,JP,UK').")
-        print("We no longer default to 'ALL' to prevent abuse/excessive API usage.")
         sys.exit(1)
 
     wanted_codes = [c.strip().upper() for c in nord_countries_env.split(',')]
