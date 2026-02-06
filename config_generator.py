@@ -23,7 +23,7 @@ def get_nordvpn_server_details(country_id=None):
     """
     url = "https://api.nordvpn.com/v2/servers"
     params = {
-        "filters[servers_technologies][identifier]": "wireguard_udp",
+        "filters[servers_technologies][id]": 35,
         "limit": 30
     }
     
