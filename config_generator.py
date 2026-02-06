@@ -6,6 +6,7 @@ import sys
 import time
 import subprocess
 import re
+import yaml
 
 def get_xray_vless_keys():
     """
@@ -150,6 +151,7 @@ def main():
     xray_port = int(os.environ.get("XRAY_PORT", 10000))
     nord_countries_env = os.environ.get("NORD_COUNTRIES", "")
     enable_direct = os.environ.get("ENABLE_DIRECT", "false").lower() == "true"
+    enable_gluetun = os.environ.get("ENABLE_GLUETUN", "false").lower() == "true"
     
     if not nord_private_key:
 
@@ -219,6 +221,20 @@ def main():
         "domain": ["geosite:cn"]
     })
 
+    # Gluetun Docker Compose Structure
+    docker_compose = {
+        "version": "3",
+        "services": {},
+        "networks": {
+            "xray_net": {
+                "driver": "bridge"
+            }
+        }
+    }
+    
+    # Add Xray service to compose (will accumulate depends_on)
+    xray_service_depends_on = []
+
     for country in target_countries:
         c_code = country['code']
         c_name = country['name']
@@ -248,20 +264,55 @@ def main():
             "flow": "xtls-rprx-vision"
         })
         
-        # Add Outbound
-        outbounds.append({
-            "tag": tag,
-            "protocol": "wireguard",
-            "settings": {
-                "secretKey": nord_private_key,
-                "address": ["10.5.0.2/32"], # Shared internal IP for all outbounds usually works in Xray logic
-                "peers": [{
-                    "publicKey": server['public_key'],
-                    "endpoint": f"{server['address']}:{server['port']}"
-                }],
-                "kernelMode": False
+        if enable_gluetun:
+            # GLUETUN MODE
+            service_name = f"gluetun-{c_code.lower()}"
+            
+            # Add Gluetun Service
+            docker_compose["services"][service_name] = {
+                "image": "qmcgaw/gluetun",
+                "container_name": service_name,
+                "cap_add": ["NET_ADMIN"],
+                "environment": [
+                    "VPN_SERVICE_PROVIDER=nordvpn",
+                    "VPN_TYPE=wireguard",
+                    f"WIREGUARD_PRIVATE_KEY={nord_private_key}",
+                    f"SERVER_HOSTNAME={server['hostname']}"
+                ],
+                "networks": ["xray_net"],
+                "restart": "always"
             }
-        })
+            
+            xray_service_depends_on.append(service_name)
+            
+            # Add Socks Outbound via Gluetun
+            outbounds.append({
+                "tag": tag,
+                "protocol": "socks",
+                "settings": {
+                    "servers": [{
+                        "address": service_name,
+                        "port": 1080 # Internal port of Gluetun
+                    }]
+                }
+            })
+            
+        else:
+            # STANDARD WIREGUARD MODE
+            # Add Outbound
+            outbounds.append({
+                "tag": tag,
+                "protocol": "wireguard",
+                "settings": {
+                    "secretKey": nord_private_key,
+                    "address": ["10.5.0.2/32"], # Shared internal IP for all outbounds usually works in Xray logic
+                    "peers": [{
+                        "publicKey": server['public_key'],
+                        "endpoint": f"{server['address']}:{server['port']}"
+                    }],
+                    "kernelMode": False
+                }
+            })
         
         # Add Routing Rule
         # Route traffic from this specific user email to this specific outbound tag
@@ -272,7 +323,8 @@ def main():
         })
         
         # Add fallbacks or print link immediately
-        # We'll print links at the end
+        # We'll print links at the end (outside loop)
+
     
     # -------------------------------------------------------------
     # Direct Route (Host Internet)
@@ -334,6 +386,31 @@ def main():
     with open(config_path, "w") as f:
         json.dump(config, f, indent=4)
         
+    if enable_gluetun:
+        # Add Xray service to the generated compose
+        # We assume the image is built or available as 'xray-gen:latest' or similar, 
+        # but for a production compose we might want to use the same image as the generator or a standard one.
+        # Let's use ghcr.io/xtls/xray-core:latest + volume mount for config
+        
+        docker_compose["services"]["xray"] = {
+            "image": "ghcr.io/xtls/xray-core:latest",
+            "container_name": "xray",
+            "volumes": ["./config/config.json:/etc/xray/config.json"],
+            "ports": [f"{xray_port}:{xray_port}"],
+            "networks": ["xray_net"],
+            "restart": "always",
+            "depends_on": xray_service_depends_on
+        }
+
+        # Write docker-compose.gluetun.yaml
+        compose_path = os.path.join(base_dir, "docker-compose.gluetun.yaml")
+        
+        with open(compose_path, "w") as f:
+            yaml.dump(docker_compose, f, default_flow_style=False, sort_keys=False)
+            
+        print(f"\n✅ Gluetun Compose generated: docker-compose.gluetun.yaml")
+        print(f"   (Use: docker compose -f {compose_path} up -d)")
+
     print("\n✅ Xray configuration generated: config.json")
     print("-------------------------------------------------------")
     print("VLESS Links & QR Codes:")

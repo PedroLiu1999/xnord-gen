@@ -102,6 +102,36 @@ docker run -d --name xray \
 | `ENABLE_DIRECT`      | Set to `true` to generate a dedicated link that bypasses VPN. | `false` |
 | `XRAY_DOMAIN`        | The domain used in the generated VLESS links. | `<YOUR_DOMAIN>` |
 | `XRAY_PORT`          | The inbound listening port for Xray. | `10000` |
+| `ENABLE_GLUETUN`     | Set to `true` to generate a `docker-compose.gluetun.yaml` using Gluetun containers. | `false` |
+
+---
+
+---
+
+## Gluetun Integration
+
+If you prefer to run Xray with **Gluetun** (a lightweight VPN client) instead of using Xray's built-in WireGuard handling, you can enable Gluetun mode.
+
+### How it works
+1. **Enable**: Set `ENABLE_GLUETUN=true`.
+2. **Generate**: The tool will generate:
+   - `config.json`: Xray config routing traffic to local Gluetun containers.
+   - `docker-compose.gluetun.yaml`: A Docker Compose file defining the `xray` service and one `gluetun` service per requested country.
+
+### Usage
+```bash
+# 1. Generate the Compose file
+docker run --rm \
+    -v $(pwd)/config:/app/config \
+    -e NORD_PRIVATE_KEY="<YOUR_KEY>" \
+    -e NORD_COUNTRIES="US,JP" \
+    -e ENABLE_GLUETUN=true \
+    ghcr.io/pedroliu1999/xnord-gen:latest
+
+# 2. Start the Stack
+docker compose -f config/docker-compose.gluetun.yaml up -d
+```
+All traffic for `[US]` links will be routed through the `gluetun-us` container, and `[JP]` through `gluetun-jp`.
 
 ---
 
