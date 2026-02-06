@@ -59,7 +59,8 @@ def get_nordvpn_server_details(country_id=None):
         # Extract public key
         public_key = None
         for tech in server.get('technologies', []):
-             if tech['identifier'] == 'wireguard_udp':
+             # V2 API uses ID 35 for Wireguard UDP
+             if tech.get('id') == 35:
                  for meta in tech.get('metadata', []):
                      if meta['name'] == 'public_key':
                          public_key = meta['value']
@@ -278,9 +279,16 @@ def main():
     }
     
     # Ensure directory exists
-    os.makedirs("/app/config", exist_ok=True)
+    # If /app exists (Docker), use /app/config. Otherwise local ./config
+    if os.path.exists("/app"):
+        base_dir = "/app/config"
+    else:
+        base_dir = "./config"
+        
+    os.makedirs(base_dir, exist_ok=True)
+    config_path = os.path.join(base_dir, "config.json")
     
-    with open("/app/config/config.json", "w") as f:
+    with open(config_path, "w") as f:
         json.dump(config, f, indent=4)
         
     print("\n✅ Xray configuration generated: config.json")
