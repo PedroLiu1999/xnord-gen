@@ -18,13 +18,13 @@ def get_all_countries():
 
 def get_nordvpn_server_details(country_id=None):
     """
-    Fetches the recommended NordVPN server.
-    Uses country_id if provided (more reliable for the API).
+    Fetches the recommended NordVPN server using V2 API.
+    Fetches a batch of servers and sorts by load locally.
     """
-    url = "https://api.nordvpn.com/v1/servers/recommendations"
+    url = "https://api.nordvpn.com/v2/servers"
     params = {
         "filters[servers_technologies][identifier]": "wireguard_udp",
-        "limit": 1
+        "limit": 30
     }
     
     if country_id:
@@ -32,11 +32,14 @@ def get_nordvpn_server_details(country_id=None):
 
     try:
         # Retry logic for robustness when making many requests
+        data = None
         for attempt in range(3):
             try:
                 response = requests.get(url, params=params, timeout=10)
                 response.raise_for_status()
-                data = response.json()
+                json_resp = response.json()
+                # V2 returns a dict with 'servers' key
+                data = json_resp.get('servers')
                 if data:
                     break
             except requests.RequestException:
@@ -44,9 +47,11 @@ def get_nordvpn_server_details(country_id=None):
                 time.sleep(1)
         
         if not data:
-            # print(f"No servers found for country ID {country_id}")
             return None
             
+        # Sort by load (ascending)
+        data.sort(key=lambda x: x.get('load', 100))
+        
         server = data[0]
         hostname = server['hostname']
         station_ip = server['station']
