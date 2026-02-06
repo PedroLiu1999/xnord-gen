@@ -7,6 +7,10 @@ RUN apk add --no-cache \
     curl \
     jq
 
+# Copy Xray binary from official image
+COPY --from=ghcr.io/xtls/xray-core:latest /usr/local/bin/xray /usr/bin/xray
+
+
 # Install Python requirements
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

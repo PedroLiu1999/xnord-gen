@@ -4,6 +4,36 @@ import requests
 import uuid
 import sys
 import time
+import subprocess
+import re
+
+def get_xray_vless_keys():
+    """
+    Generates VLESS encryption keys using 'xray vlessenc'.
+    Returns (decryption_key, encryption_key) or (None, None) if failed.
+    """
+    try:
+        # Run xray vlessenc
+        # We expect xray to be in PATH (from Dockerfile /usr/bin/xray)
+        # Using list args is safer and shell=False is default
+        result = subprocess.check_output(["xray", "vlessenc"], text=True)
+        
+        # Parse output for X25519 keys (first block typically)
+        # Search for: "decryption": "KEY"
+        # and "encryption": "KEY"
+        
+        dec_match = re.search(r'"decryption":\s*"([^"]+)"', result)
+        enc_match = re.search(r'"encryption":\s*"([^"]+)"', result)
+        
+        if dec_match and enc_match:
+            return dec_match.group(1), enc_match.group(1)
+        else:
+            print("Could not parse xray vlessenc output.")
+            return None, None
+            
+    except Exception as e:
+        print(f"Error running xray vlessenc: {e}")
+        return None, None
 
 def get_all_countries():
     """Fetches the list of all available countries from NordVPN."""
@@ -163,6 +193,17 @@ def main():
     outbounds = []
     routing_rules = []
 
+    # Generate keys
+    print("Generating Xray VLESS keys...")
+    decryption_key, encryption_key = get_xray_vless_keys()
+    
+    if not decryption_key:
+        print("WARNING: Failed to generate keys. Falling back to encryption=none")
+        decryption_key = "none"
+        encryption_key = "none"
+    else:
+        print(f"Keys generated.")
+
     print(f"Generating configuration for {len(target_countries)} countries...")
 
     # Add the Direct outbound first
@@ -265,7 +306,7 @@ def main():
                 "protocol": "vless",
                 "settings": {
                     "clients": clients,
-                    "decryption": "none"
+                    "decryption": decryption_key
                 },
                 "streamSettings": {
                     "network": "xhttp",
@@ -314,8 +355,8 @@ def main():
             tag_suffix = f"Nord-{code}"
             
         # VLESS Link for XHTTP
-        # Format: vless://UUID@DOMAIN:443?encryption=none&security=tls&type=xhttp&path=/xray&flow=xtls-rprx-vision&host=DOMAIN#Tag
-        link = f"vless://{c['id']}@{domain_placeholder}:{443}?type=xhttp&path=/xray&encryption=none&security=tls&flow=xtls-rprx-vision#{tag_suffix}"
+        # Format: vless://UUID@DOMAIN:443?encryption=ENCRYPTION_KEY&security=tls&type=xhttp&path=/xray&flow=xtls-rprx-vision&host=DOMAIN#Tag
+        link = f"vless://{c['id']}@{domain_placeholder}:{443}?type=xhttp&path=/xray&encryption={encryption_key}&security=tls&flow=xtls-rprx-vision#{tag_suffix}"
         
         
         if domain_placeholder == "<YOUR_DOMAIN>":
