@@ -203,7 +203,8 @@ def main():
         # Add Client
         clients.append({
             "id": client_id,
-            "email": email
+            "email": email,
+            "flow": "xtls-rprx-vision"
         })
         
         # Add Outbound
@@ -242,7 +243,8 @@ def main():
         
         clients.append({
             "id": direct_id,
-            "email": direct_email
+            "email": direct_email,
+            "flow": "xtls-rprx-vision"
         })
         
         routing_rules.append({
@@ -312,8 +314,8 @@ def main():
             tag_suffix = f"Nord-{code}"
             
         # VLESS Link for XHTTP
-        # Format: vless://UUID@DOMAIN:443?encryption=none&security=tls&type=xhttp&path=/xray&host=DOMAIN#Tag
-        link = f"vless://{c['id']}@{domain_placeholder}:{443}?type=xhttp&path=/xray&encryption=none&security=tls#{tag_suffix}"
+        # Format: vless://UUID@DOMAIN:443?encryption=none&security=tls&type=xhttp&path=/xray&flow=xtls-rprx-vision&host=DOMAIN#Tag
+        link = f"vless://{c['id']}@{domain_placeholder}:{443}?type=xhttp&path=/xray&encryption=none&security=tls&flow=xtls-rprx-vision#{tag_suffix}"
         
         
         if domain_placeholder == "<YOUR_DOMAIN>":
