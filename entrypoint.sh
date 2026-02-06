@@ -8,7 +8,7 @@ if [ "$1" = "fetch-nord-key" ]; then
 fi
 
 # Run the config generator
-python3 /app/config_generator.py
+python3 /app/config_generator.py "$@"
 
 # Check if config.json was generated
     echo "Config generated successfully."

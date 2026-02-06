@@ -80,6 +80,35 @@ def generate_uuid():
     return str(uuid.uuid4())
 
 def main():
+    # 1. Check for Helper Commands
+    if len(sys.argv) > 1 and sys.argv[1] == "list-countries":
+        all_countries = get_all_countries()
+        search_term = None
+        if len(sys.argv) > 2:
+            search_term = " ".join(sys.argv[2:]).lower()
+        
+        print(f"{'Name':<35} | {'Code':<5} | {'ID':<10}")
+        print("-" * 55)
+        
+        found = False
+        for c in all_countries:
+            c_name = c['name']
+            c_code = c['code']
+            c_id = c['id']
+            
+            if search_term:
+                if search_term in c_name.lower() or search_term == c_code.lower():
+                    print(f"{c_name:<35} | {c_code:<5} | {c_id:<10}")
+                    found = True
+            else:
+                print(f"{c_name:<35} | {c_code:<5} | {c_id:<10}")
+                found = True
+                
+        if search_term and not found:
+            print(f"No countries found matching '{search_term}'")
+            
+        sys.exit(0)
+
     # 2. Strict Key Requirement
     nord_private_key = os.environ.get("NORD_PRIVATE_KEY")
     xray_port = int(os.environ.get("XRAY_PORT", 10000))

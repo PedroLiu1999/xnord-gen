@@ -35,7 +35,18 @@ You need your specific **WireGuard Private Key**.
 
 - **If you don't have a token**, create one in the NordVPN dashboard or extract the key from a running Linux client (`wg show nordlynx private-key`).
 
-### 3. Generate Configuration
+### 3. List Available Countries (Helper)
+Not sure which code to use? Use this helper command to search or list all countries.
+
+```bash
+# List ALL
+docker run --rm ghcr.io/pedroliu1999/xnord-gen:latest list-countries
+
+# Search for a specific country
+docker run --rm ghcr.io/pedroliu1999/xnord-gen:latest list-countries "United States"
+```
+
+### 4. Generate Configuration
 Run the generator. You **must** specify the countries you want (e.g., `US,JP`).
 The config will be saved to `config.json`.
 
@@ -51,7 +62,7 @@ docker run --rm \
     ghcr.io/pedroliu1999/xnord-gen:latest
 ```
 
-### 4. Run Xray
+### 5. Run Xray
 Use the generated configuration to run the Xray server.
 
 ```bash
