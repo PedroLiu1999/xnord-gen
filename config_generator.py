@@ -84,8 +84,10 @@ def main():
     nord_private_key = os.environ.get("NORD_PRIVATE_KEY")
     xray_port = int(os.environ.get("XRAY_PORT", 10000))
     nord_countries_env = os.environ.get("NORD_COUNTRIES", "")
+    enable_direct = os.environ.get("ENABLE_DIRECT", "false").lower() == "true"
     
     if not nord_private_key:
+
         print("\n" + "!" * 60)
         print("ERROR: NORD_PRIVATE_KEY is missing.")
         print("!" * 60)
@@ -196,6 +198,25 @@ def main():
         # We'll print links at the end
     
     # -------------------------------------------------------------
+    # Direct Route (Host Internet)
+    # -------------------------------------------------------------
+    if enable_direct:
+        print("Enable Direct Route: YES")
+        direct_id = generate_uuid()
+        direct_email = "direct.user@example.com"
+        
+        clients.append({
+            "id": direct_id,
+            "email": direct_email
+        })
+        
+        routing_rules.append({
+            "type": "field",
+            "user": [direct_email],
+            "outboundTag": "direct"
+        })
+        
+    # -------------------------------------------------------------
     # Config Construction
     # -------------------------------------------------------------
     config = {
@@ -239,13 +260,19 @@ def main():
     import qrcode
     
     for c in clients:
-        # reverse lookup country code from email
-        code = c['email'].split('.')[0].upper()
+        # Check if direct
+        if c['email'] == "direct.user@example.com":
+            code = "DIRECT"
+            tag_suffix = "Direct"
+        else:
+            # reverse lookup country code from email
+            code = c['email'].split('.')[0].upper()
+            tag_suffix = f"Nord-{code}"
+            
         # VLESS Link for XHTTP
-        # Format: vless://UUID@DOMAIN:443?encryption=none&security=tls&type=xhttp&path=/xray&host=DOMAIN#Nord-XX
-        # Note: 'type=xhttp' is the key change. 'mode' might be needed for older clients but standard is 'type'.
-        # We also ensure host is set properly for SNI/routing.
-        link = f"vless://{c['id']}@{domain_placeholder}:{443}?type=xhttp&path=/xray&encryption=none&security=tls#Nord-{code}"
+        # Format: vless://UUID@DOMAIN:443?encryption=none&security=tls&type=xhttp&path=/xray&host=DOMAIN#Tag
+        link = f"vless://{c['id']}@{domain_placeholder}:{443}?type=xhttp&path=/xray&encryption=none&security=tls#{tag_suffix}"
+        
         
         if domain_placeholder == "<YOUR_DOMAIN>":
              print(f"\nExample for [{code}] (Replace <YOUR_DOMAIN> first!):")

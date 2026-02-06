@@ -88,6 +88,7 @@ docker run -d --name xray \
 |----------------------|-------------|---------|
 | `NORD_PRIVATE_KEY`   | **Required**. Your NordLynx Private Key. | N/A |
 | `NORD_COUNTRIES`     | **Required**. Comma-separated list of country codes (e.g., `US,JP`). | N/A |
+| `ENABLE_DIRECT`      | Set to `true` to generate a dedicated link that bypasses VPN. | `false` |
 | `XRAY_DOMAIN`        | The domain used in the generated VLESS links. | `<YOUR_DOMAIN>` |
 | `XRAY_PORT`          | The inbound listening port for Xray. | `10000` |
 
