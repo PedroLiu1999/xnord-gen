@@ -386,30 +386,36 @@ def main():
     with open(config_path, "w") as f:
         json.dump(config, f, indent=4)
         
-    if enable_gluetun:
-        # Add Xray service to the generated compose
-        # We assume the image is built or available as 'xray-gen:latest' or similar, 
-        # but for a production compose we might want to use the same image as the generator or a standard one.
-        # Let's use ghcr.io/xtls/xray-core:latest + volume mount for config
+    # Add Xray service to the generated compose
+    # We use ghcr.io/xtls/xray-core:latest + volume mount for config
+    
+    xray_service = {
+        "image": "ghcr.io/xtls/xray-core:latest",
+        "container_name": "xray",
+        "volumes": ["./config/config.json:/etc/xray/config.json"],
+        "ports": [f"{xray_port}:{xray_port}"],
+        "networks": ["xray_net"],
+        "restart": "always"
+    }
+    
+    if xray_service_depends_on:
+        xray_service["depends_on"] = xray_service_depends_on
         
-        docker_compose["services"]["xray"] = {
-            "image": "ghcr.io/xtls/xray-core:latest",
-            "container_name": "xray",
-            "volumes": ["./config/config.json:/etc/xray/config.json"],
-            "ports": [f"{xray_port}:{xray_port}"],
-            "networks": ["xray_net"],
-            "restart": "always",
-            "depends_on": xray_service_depends_on
-        }
+    docker_compose["services"]["xray"] = xray_service
 
-        # Write docker-compose.gluetun.yaml
-        compose_path = os.path.join(base_dir, "docker-compose.gluetun.yaml")
+    # Determine filename based on mode
+    if enable_gluetun:
+        filename = "docker-compose.gluetun.yaml"
+    else:
+        filename = "docker-compose.yaml"
+
+    compose_path = os.path.join(base_dir, filename)
+    
+    with open(compose_path, "w") as f:
+        yaml.dump(docker_compose, f, default_flow_style=False, sort_keys=False)
         
-        with open(compose_path, "w") as f:
-            yaml.dump(docker_compose, f, default_flow_style=False, sort_keys=False)
-            
-        print(f"\n✅ Gluetun Compose generated: docker-compose.gluetun.yaml")
-        print(f"   (Use: docker compose -f {compose_path} up -d)")
+    print(f"\n✅ Docker Compose generated: {filename}")
+    print(f"   (Use: docker compose -f {compose_path} up -d)")
 
     print("\n✅ Xray configuration generated: config.json")
     print("-------------------------------------------------------")
