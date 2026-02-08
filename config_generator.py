@@ -268,6 +268,9 @@ def main():
             # GLUETUN MODE
             service_name = f"gluetun-{c_code.lower()}"
             
+            # Generate random password for Shadowsocks
+            ss_password = str(uuid.uuid4())
+            
             # Add Gluetun Service
             docker_compose["services"][service_name] = {
                 "image": "qmcgaw/gluetun",
@@ -277,7 +280,10 @@ def main():
                     "VPN_SERVICE_PROVIDER=nordvpn",
                     "VPN_TYPE=wireguard",
                     f"WIREGUARD_PRIVATE_KEY={nord_private_key}",
-                    f"SERVER_HOSTNAME={server['hostname']}"
+                    f"SERVER_HOSTNAME={server['hostname']}",
+                    "SHADOWSOCKS=on",
+                    f"SHADOWSOCKS_PASSWORD={ss_password}",
+                    "SHADOWSOCKS_METHOD=chacha20-ietf-poly1305"
                 ],
                 "networks": ["xray_net"],
                 "restart": "always"
@@ -285,14 +291,16 @@ def main():
             
             xray_service_depends_on.append(service_name)
             
-            # Add Socks Outbound via Gluetun
+            # Add Shadowsocks Outbound via Gluetun
             outbounds.append({
                 "tag": tag,
-                "protocol": "socks",
+                "protocol": "shadowsocks",
                 "settings": {
                     "servers": [{
                         "address": service_name,
-                        "port": 1080 # Internal port of Gluetun
+                        "port": 8388,
+                        "method": "chacha20-ietf-poly1305",
+                        "password": ss_password
                     }]
                 }
             })
@@ -395,6 +403,8 @@ def main():
         "volumes": ["./config/config.json:/etc/xray/config.json"],
         "ports": [f"{xray_port}:{xray_port}"],
         "networks": ["xray_net"],
+        "cap_add": ["NET_ADMIN"],
+        "devices": ["/dev/net/tun:/dev/net/tun"],
         "restart": "always"
     }
     
