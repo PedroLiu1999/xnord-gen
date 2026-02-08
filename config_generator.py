@@ -214,6 +214,12 @@ def main():
         "tag": "direct"
     })
     
+    # Add Blackhole outbound
+    outbounds.append({
+        "protocol": "blackhole",
+        "tag": "blocked"
+    })
+    
     # Block rule
     routing_rules.append({
         "type": "field",
@@ -352,6 +358,14 @@ def main():
             "type": "field",
             "user": [direct_email],
             "outboundTag": "direct"
+        })
+        
+        # Block local access for Direct user
+        routing_rules.insert(0, {
+            "type": "field",
+            "user": [direct_email],
+            "ip": ["geoip:private"],
+            "outboundTag": "blocked"
         })
         
     # -------------------------------------------------------------
