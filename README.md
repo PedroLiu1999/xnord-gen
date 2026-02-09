@@ -49,7 +49,7 @@ docker run --rm ghcr.io/pedroliu1999/xnord-gen:latest list-countries "United Sta
 
 # Show Links (Read-Only)
 Display connection links from an existing `config.json` without regenerating:
-docker run --rm -v $(pwd)/config:/app/config ghcr.io/pedroliu1999/xnord-gen:latest show-links
+docker run --rm -v $(pwd):/app/config ghcr.io/pedroliu1999/xnord-gen:latest show-links
 ```
 
 ### 4. Generate Configuration
