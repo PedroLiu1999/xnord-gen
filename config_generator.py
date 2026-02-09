@@ -310,6 +310,7 @@ class ComposeBuilder:
         env_vars = [
             "VPN_SERVICE_PROVIDER=nordvpn",
             "VPN_TYPE=wireguard",
+            "DNS_ADDRESS=1.1.1.1",
             f"WIREGUARD_PRIVATE_KEY={nord_private_key}",
         ]
         
