@@ -160,8 +160,9 @@ class XrayConfigBuilder:
         self.routing_rules = []
         
         # Initialize Direct and Blackhole outbounds
-        self.outbounds.append({"protocol": "freedom", "tag": "direct"})
+        # Default outbound is now blocked for security
         self.outbounds.append({"protocol": "blackhole", "tag": "blocked"})
+        self.outbounds.append({"protocol": "freedom", "tag": "direct"})
         
         # Default Blocking Rule for CN
         self.routing_rules.append({
@@ -186,14 +187,19 @@ class XrayConfigBuilder:
             "outboundTag": outbound_tag
         })
         
-    def add_blocking_rule(self, user_email: str, ip_list: List[str]):
+    def add_blocking_rule(self, user_email: str, ip_list: List[str] = None, domain_list: List[str] = None):
         """Adds a high-priority blocking rule."""
-        self.routing_rules.insert(0, {
+        rule = {
             "type": "field",
             "user": [user_email],
-            "ip": ip_list,
             "outboundTag": "blocked"
-        })
+        }
+        if ip_list:
+            rule["ip"] = ip_list
+        if domain_list:
+            rule["domain"] = domain_list
+            
+        self.routing_rules.insert(0, rule)
 
     def add_wireguard_outbound(self, tag: str, private_key: str, server_address: str, 
                              server_port: int, public_key: str, local_address: str = "10.5.0.2/32"):
@@ -502,7 +508,8 @@ def main():
         xray_builder.add_client(direct_email)
         
         # Security: Blocking Rule for Direct User
-        xray_builder.add_blocking_rule(direct_email, ["geoip:private"])
+        # Block private IPs (geoip:private) AND private domains (geosite:private)
+        xray_builder.add_blocking_rule(direct_email, ip_list=["geoip:private"], domain_list=["geosite:private"])
         
         # Allow Rule
         xray_builder.add_routing_rule(direct_email, "direct")
