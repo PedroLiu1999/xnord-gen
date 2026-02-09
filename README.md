@@ -8,6 +8,8 @@ This tool generates a comprehensive **Xray** configuration file designed to sit 
 - **Smart Routing**: Connecting via a specific Client ID routes your traffic strictly through that country's server (e.g., `User-US` -> `Nord-US`).
 - **Secure**: Uses WireGuard (NordLynx) for high-performance outbound connections.
 - **Filtering**: Optionally convert only specific countries (e.g., just US, UK, JP).
+- **Docker Compose Export**: Generates ready-to-use directory with `config.json` and `docker-compose.yaml` (or `.gluetun.yaml`).
+- **Enhanced Security**: Blocks Direct connections to local networks and uses random passwords for Shadowsocks integration.
 - **Helper Utilities**: Includes tools to fetch your private key using a NordVPN Access Token.
 
 ## Prerequisites
@@ -48,28 +50,29 @@ docker run --rm ghcr.io/pedroliu1999/xnord-gen:latest list-countries "United Sta
 
 ### 4. Generate Configuration
 Run the generator. You **must** specify the countries you want (e.g., `US,JP`).
-The config will be saved to `config.json`.
+The config and a corresponding `docker-compose.yaml` will be saved to `config/`.
 
 ```bash
 # Create a folder for the config
 mkdir -p config
 
 docker run --rm \
-    -v $(pwd):/app/config \
+    -v $(pwd)/config:/app/config \
     -e NORD_PRIVATE_KEY="<YOUR_PRIVATE_KEY>" \
     -e NORD_COUNTRIES="US,JP" \
     -e XRAY_DOMAIN="yourdomain.com" \
     ghcr.io/pedroliu1999/xnord-gen:latest
 ```
 
+The tool will verify your key, fetch server details, generate UUIDs, and output:
+- `config/config.json`: The Xray configuration.
+- `config/docker-compose.yaml`: A Docker Compose file to run the stack.
+
 ### 5. Run Xray
-Use the generated configuration to run the Xray server.
+Use the generated Docker Compose file to start the service.
 
 ```bash
-docker run -d --name xray \
-    -v $(pwd)/config/config.json:/etc/xray/config.json \
-    -p 10000:10000 \
-    ghcr.io/xtls/xray-core
+docker compose -f config/docker-compose.yaml up -d
 ```
 
 ---
@@ -99,10 +102,23 @@ docker run -d --name xray \
 |----------------------|-------------|---------|
 | `NORD_PRIVATE_KEY`   | **Required**. Your NordLynx Private Key. | N/A |
 | `NORD_COUNTRIES`     | **Required**. Comma-separated list of country codes (e.g., `US,JP`). | N/A |
-| `ENABLE_DIRECT`      | Set to `true` to generate a dedicated link that bypasses VPN. | `false` |
+| `ENABLE_DIRECT`      | Set to `true` to generate a dedicated link that bypasses VPN. Securely blocks LAN access. | `false` |
 | `XRAY_DOMAIN`        | The domain used in the generated VLESS links. | `<YOUR_DOMAIN>` |
 | `XRAY_PORT`          | The inbound listening port for Xray. | `10000` |
 | `ENABLE_GLUETUN`     | Set to `true` to generate a `docker-compose.gluetun.yaml` using Gluetun containers. | `false` |
+| `XRAY_NETWORK`       | Optional. Name of an external Docker network to use instead of the default bridge. | `None` |
+
+---
+
+## Security & Privileges
+
+To support advanced networking features required for VPN routing, the generated Docker Compose file includes specific privileges for the Xray container:
+
+- **`NET_ADMIN` Capability**: Required to manipulate network interfaces.
+- **`/dev/net/tun` Device**: Mounted to allow creation of TUN interfaces.
+
+### Direct Mode Security
+When `ENABLE_DIRECT=true` is used, the generator automatically adds a high-priority routing rule to **block** traffic destined for private IP ranges (e.g., `192.168.x.x`, `10.x.x.x`). This prevents external users connecting via "Direct" mode from accessing your local network resources.
 
 ---
 
@@ -115,8 +131,9 @@ If you prefer to run Xray with **Gluetun** (a lightweight VPN client) instead of
 ### How it works
 1. **Enable**: Set `ENABLE_GLUETUN=true`.
 2. **Generate**: The tool will generate:
-   - `config.json`: Xray config routing traffic to local Gluetun containers.
+   - `config.json`: Xray config routing traffic to local Gluetun containers via **Shadowsocks**.
    - `docker-compose.gluetun.yaml`: A Docker Compose file defining the `xray` service and one `gluetun` service per requested country.
+3. **Shadowsocks**: The system automatically generates a unique password for each Gluetun instance and configures Xray to communicate with it using the `chacha20-ietf-poly1305` method. This replaces the older SOCKS5 implementation for better stability and security.
 
 ### Usage
 ```bash

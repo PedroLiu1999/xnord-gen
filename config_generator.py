@@ -20,6 +20,7 @@ class Settings:
     enable_direct: bool
     enable_gluetun: bool
     xray_domain: str
+    xray_network: Optional[str] = None
 
     @classmethod
     def load(cls):
@@ -45,6 +46,7 @@ class Settings:
         enable_direct = os.environ.get("ENABLE_DIRECT", "false").lower() == "true"
         enable_gluetun = os.environ.get("ENABLE_GLUETUN", "false").lower() == "true"
         xray_domain = os.environ.get("XRAY_DOMAIN", "<YOUR_DOMAIN>")
+        xray_network = os.environ.get("XRAY_NETWORK")
 
         return cls(
             nord_private_key=nord_private_key,
@@ -52,7 +54,8 @@ class Settings:
             xray_port=xray_port,
             enable_direct=enable_direct,
             enable_gluetun=enable_gluetun,
-            xray_domain=xray_domain
+            xray_domain=xray_domain,
+            xray_network=xray_network
         )
 
     @staticmethod
@@ -163,7 +166,7 @@ class XrayConfigBuilder:
         # Default Blocking Rule for CN
         self.routing_rules.append({
             "type": "field",
-            "outboundTag": "direct",
+            "outboundTag": "blocked",
             "domain": ["geosite:cn"]
         })
 
@@ -204,7 +207,7 @@ class XrayConfigBuilder:
                     "publicKey": public_key,
                     "endpoint": f"{server_address}:{server_port}"
                 }],
-                "kernelMode": False
+                "kernelMode": True
             }
         })
 
@@ -277,14 +280,24 @@ class XrayConfigBuilder:
 # --- Docker Compose Builder ---
 
 class ComposeBuilder:
-    def __init__(self):
+    def __init__(self, network_name: str = None):
         self.services = {}
         self.version = "3"
-        self.networks = {
-            "xray_net": {
-                "driver": "bridge"
+        
+        if network_name:
+            self.networks = {
+                "xray_net": {
+                    "name": network_name,
+                    "external": True
+                }
             }
-        }
+        else:
+            self.networks = {
+                "xray_net": {
+                    "driver": "bridge"
+                }
+            }
+            
         self.xray_depends_on = []
 
     def add_gluetun_service(self, name: str, nord_private_key: str, server_hostname: str, 
@@ -419,7 +432,7 @@ def main():
 
     # 3. Initialize Builders
     xray_builder = XrayConfigBuilder(settings.xray_port, dec_key)
-    compose_builder = ComposeBuilder()
+    compose_builder = ComposeBuilder(settings.xray_network)
     nord_client = NordVPNClient()
 
     # 4. Filter Countries
