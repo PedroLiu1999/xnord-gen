@@ -522,7 +522,7 @@ def main():
         
         # Security: Blocking Rule for Direct User
         # Block private IPs (geoip:private) AND private domains (geosite:private)
-        xray_builder.add_blocking_rule(direct_email, ip_list=["geoip:private"], domain_list=["geosite:private"])
+        xray_builder.add_blocking_rule(direct_email, ip_list=["geoip:private","10.0.0.0/8","172.16.0.0/12","192.168.0.0/16","127.0.0.0/8"])
         
         # Allow Rule
         xray_builder.add_routing_rule(direct_email, "direct")
