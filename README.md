@@ -57,7 +57,7 @@ The config and a corresponding `docker-compose.yaml` will be saved to `config/`.
 mkdir -p config
 
 docker run --rm \
-    -v $(pwd)/config:/app/config \
+    -v $(pwd):/app/config \
     -e NORD_PRIVATE_KEY="<YOUR_PRIVATE_KEY>" \
     -e NORD_COUNTRIES="US,JP" \
     -e XRAY_DOMAIN="yourdomain.com" \
@@ -139,7 +139,7 @@ If you prefer to run Xray with **Gluetun** (a lightweight VPN client) instead of
 ```bash
 # 1. Generate the Compose file
 docker run --rm \
-    -v $(pwd)/config:/app/config \
+    -v $(pwd):/app/config \
     -e NORD_PRIVATE_KEY="<YOUR_KEY>" \
     -e NORD_COUNTRIES="US,JP" \
     -e ENABLE_GLUETUN=true \

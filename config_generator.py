@@ -426,12 +426,59 @@ class OutputHandler:
 
 def main():
     # 0. Handle CLI commands
-    if len(sys.argv) > 1 and sys.argv[1] == "list-countries":
-        client = NordVPNClient()
-        countries = client.get_all_countries()
-        search_term = " ".join(sys.argv[2:]).lower() if len(sys.argv) > 2 else None
-        OutputHandler.print_country_list(countries, search_term)
-        sys.exit(0)
+    if len(sys.argv) > 1:
+        cmd = sys.argv[1]
+        
+        if cmd == "list-countries":
+            client = NordVPNClient()
+            countries = client.get_all_countries()
+            search_term = " ".join(sys.argv[2:]).lower() if len(sys.argv) > 2 else None
+            OutputHandler.print_country_list(countries, search_term)
+            sys.exit(0)
+            
+        elif cmd == "show-links":
+            print("Loading configuration...")
+            
+            # Load settings for domain/port
+            settings = Settings.load()
+            if not settings: sys.exit(1)
+            
+            base_dir = "/app/config" if os.path.exists("/app") else "./config"
+            config_path = os.path.join(base_dir, "config.json")
+            
+            if not os.path.exists(config_path):
+                 print("Error: config.json not found. Please run the generator first.")
+                 sys.exit(1)
+                 
+            try:
+                with open(config_path, "r") as f:
+                    config = json.load(f)
+                    
+                # Extract clients from first inbound
+                inbound = config.get("inbounds", [{}])[0]
+                settings_obj = inbound.get("settings", {})
+                clients = settings_obj.get("clients", [])
+                decryption = settings_obj.get("decryption")
+                
+                if not clients:
+                    print("Error: No clients found in config.json")
+                    sys.exit(1)
+                    
+                # Since we don't persist keys anymore, we can only guess encryption key
+                # If decryption is "none", encryption is "none".
+                # If decryption is present, we LOST the encryption key (since it wasn't saved).
+                # We will display a warning if that's the case.
+                enc_key = "none"
+                if decryption and decryption != "none":
+                    enc_key = "<MISSING_ENCRYPTION_KEY>"
+                    print("WARNING: Encryption key was not saved. Links may require the original encryption key.")
+                    
+                OutputHandler.print_vless_links(clients, settings.xray_domain, settings.xray_port, enc_key)
+                sys.exit(0)
+                
+            except Exception as e:
+                print(f"Error reading config: {e}")
+                sys.exit(1)
 
     # 1. Load Settings
     settings = Settings.load()
