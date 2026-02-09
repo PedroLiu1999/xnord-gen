@@ -333,6 +333,7 @@ class ComposeBuilder:
             "cap_add": ["NET_ADMIN"],
             "environment": env_vars,
             "networks": ["xray_net"],
+            "devices": ["/dev/net/tun"],
             "restart": "always"
         }
         self.xray_depends_on.append(name)
