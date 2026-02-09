@@ -46,6 +46,10 @@ docker run --rm ghcr.io/pedroliu1999/xnord-gen:latest list-countries
 
 # Search for a specific country
 docker run --rm ghcr.io/pedroliu1999/xnord-gen:latest list-countries "United States"
+
+# Show Links (Read-Only)
+Display connection links from an existing `config.json` without regenerating:
+docker run --rm -v $(pwd)/config:/app/config ghcr.io/pedroliu1999/xnord-gen:latest show-links
 ```
 
 ### 4. Generate Configuration
@@ -106,7 +110,7 @@ docker run -d --name xray \
 | `XRAY_DOMAIN`        | The domain used in the generated VLESS links. | `<YOUR_DOMAIN>` |
 | `XRAY_PORT`          | The inbound listening port for Xray. | `10000` |
 | `ENABLE_GLUETUN`     | Set to `true` to generate a `docker-compose.gluetun.yaml` using Gluetun containers. | `false` |
-| `XRAY_NETWORK`       | Optional. Name of an external Docker network to use instead of the default bridge. | `None` |
+| `XRAY_NETWORK`       | Optional. Name of an external Docker network. If set, Xray ports are **NOT** exposed to host. | `None` |
 
 ---
 
@@ -118,7 +122,11 @@ To support advanced networking features required for VPN routing, the generated 
 - **`/dev/net/tun` Device**: Mounted to allow creation of TUN interfaces.
 
 ### Direct Mode Security
-When `ENABLE_DIRECT=true` is used, the generator automatically adds a high-priority routing rule to **block** traffic destined for private IP ranges (e.g., `192.168.x.x`, `10.x.x.x`). This prevents external users connecting via "Direct" mode from accessing your local network resources.
+When `ENABLE_DIRECT=true` is used, the generator automatically adds high-priority routing rules to **block** traffic destinated for:
+- Private IP ranges (e.g., `192.168.x.x`, `10.x.x.x`).
+- Local domains (e.g., `localhost`, `*.local`).
+
+This strictly prevents external users connecting via "Direct" mode from accessing your local network resources. The default outbound policy is also set to `blocked` (blackhole) for added security, ensuring only explicitly routed traffic is allowed.
 
 ---
 
@@ -133,6 +141,7 @@ If you prefer to run Xray with **Gluetun** (a lightweight VPN client) instead of
 2. **Generate**: The tool will generate:
    - `config.json`: Xray config routing traffic to local Gluetun containers via **Shadowsocks**.
    - `docker-compose.gluetun.yaml`: A Docker Compose file defining the `xray` service and one `gluetun` service per requested country.
+     - **Optimization**: Gluetun services are configured with `SERVER_COUNTRIES=<Country>` instead of specific hostnames, allowing Gluetun to automatically find the best server.
 3. **Shadowsocks**: The system automatically generates a unique password for each Gluetun instance and configures Xray to communicate with it using the `chacha20-ietf-poly1305` method. This replaces the older SOCKS5 implementation for better stability and security.
 
 ### Usage

@@ -378,7 +378,7 @@ class OutputHandler:
         import qrcode
         
         for c in clients:
-            if c['email'] == "direct.user@example.com":
+            if c['email'] == "direct.user":
                 code = "DIRECT"
                 tag_suffix = "Direct"
             else:
@@ -529,7 +529,7 @@ def main():
             print(f"Server: {server['hostname']}")
         
         # User Config
-        email = f"{c_code.lower()}.user@example.com"
+        email = f"{c_code.lower()}.user"
         tag = f"nordvpn-{c_code.lower()}"
         client_id = xray_builder.add_client(email)
         
@@ -571,7 +571,7 @@ def main():
     # 6. Process Direct Access
     if settings.enable_direct:
         print("Enable Direct Route: YES")
-        direct_email = "direct.user@example.com"
+        direct_email = "direct.user"
         xray_builder.add_client(direct_email)
         
         # Security: Blocking Rule for Direct User
