@@ -328,9 +328,9 @@ class ComposeBuilder:
 
     def add_xray_service(self, port: int):
         service = {
-            "image": "ghcr.io/xtls/xray-core:latest",
+            "image": "teddysun/xray",
             "container_name": "xray",
-            "volumes": ["./config/config.json:/etc/xray/config.json"],
+            "volumes": ["./config.json:/etc/xray/config.json"],
             "ports": [f"{port}:{port}"],
             "networks": ["xray_net"],
             "cap_add": ["NET_ADMIN"],

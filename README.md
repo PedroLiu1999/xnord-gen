@@ -65,14 +65,14 @@ docker run --rm \
 ```
 
 The tool will verify your key, fetch server details, generate UUIDs, and output:
-- `config/config.json`: The Xray configuration.
-- `config/docker-compose.yaml`: A Docker Compose file to run the stack.
+- `config.json`: The Xray configuration.
+- `docker-compose.yaml`: A Docker Compose file to run the stack.
 
 ### 5. Run Xray
 Use the generated Docker Compose file to start the service.
 
 ```bash
-docker compose -f config/docker-compose.yaml up -d
+docker compose -f docker-compose.yaml up -d
 ```
 
 ---
@@ -91,7 +91,7 @@ Once you have generated your `config.json`, you can deploy Xray manually or use 
 docker run -d --name xray \
     -v $(pwd)/config.json:/etc/xray/config.json \
     -p 10000:10000 \
-    ghcr.io/xtls/xray-core
+    teddysun/xray
 ```
 
 ---
