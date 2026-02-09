@@ -18,6 +18,27 @@ This tool generates a comprehensive **Xray** configuration file designed to sit 
 - **NordVPN Account**: You need your **WireGuard Private Key** (not your login password).
 - **Cloudflare Tunnel**: You should have a tunnel pointing to the Xray inbound port (default `10000`).
 
+## Helper Commands
+
+The image includes several helper utilities that don't require the full configuration environment.
+
+### 1. Show Connection Links
+Display connection links and QR codes from an existing `config.json` without regenerating or providing keys.
+```bash
+docker run --rm -v $(pwd):/app/config ghcr.io/pedroliu1999/xnord-gen:latest show-links
+```
+*(Note: Requires `config.json` to exist in the mounted volume)*
+
+### 2. List Available Countries
+Search or list all countries supported by NordVPN.
+```bash
+# List ALL
+docker run --rm ghcr.io/pedroliu1999/xnord-gen:latest list-countries
+
+# Search for a specific country
+docker run --rm ghcr.io/pedroliu1999/xnord-gen:latest list-countries "United States"
+```
+
 ## Quick Start
 
 ### 1. Pull the Image
@@ -36,6 +57,7 @@ You need your specific **WireGuard Private Key**.
   *Copy the key output from this command.*
 
 - **If you don't have a token**, create one in the NordVPN dashboard or extract the key from a running Linux client (`wg show nordlynx private-key`).
+
 
 ### 3. List Available Countries (Helper)
 Not sure which code to use? Use this helper command to search or list all countries.

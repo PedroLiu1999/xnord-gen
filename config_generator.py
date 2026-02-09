@@ -23,25 +23,28 @@ class Settings:
     xray_network: Optional[str] = None
 
     @classmethod
-    def load(cls):
+    def load(cls, required: bool = True):
         # Check for Helper Commands first (outside of normal flow, but good to have here or in main)
         if len(sys.argv) > 1 and sys.argv[1] == "list-countries":
             return None # Signal to main to handle special command
 
         nord_private_key = os.environ.get("NORD_PRIVATE_KEY")
-        if not nord_private_key:
+        if required and not nord_private_key:
             cls._print_key_error()
             sys.exit(1)
 
         nord_countries_env = os.environ.get("NORD_COUNTRIES", "")
-        if not nord_countries_env:
+        if required and not nord_countries_env:
             print("\n" + "!" * 60)
             print("ERROR: NORD_COUNTRIES is missing.")
             print("!" * 60)
             print("You must provide a list of country codes (e.g., 'US,JP,UK').")
             sys.exit(1)
-
-        wanted_codes = [c.strip().upper() for c in nord_countries_env.split(',')]
+        
+        wanted_codes = []
+        if nord_countries_env:
+            wanted_codes = [c.strip().upper() for c in nord_countries_env.split(',')]
+            
         xray_port = int(os.environ.get("XRAY_PORT", 10000))
         enable_direct = os.environ.get("ENABLE_DIRECT", "false").lower() == "true"
         enable_gluetun = os.environ.get("ENABLE_GLUETUN", "false").lower() == "true"
@@ -439,8 +442,8 @@ def main():
         elif cmd == "show-links":
             print("Loading configuration...")
             
-            # Load settings for domain/port
-            settings = Settings.load()
+            # Load settings for domain/port (Relaxed check)
+            settings = Settings.load(required=False)
             if not settings: sys.exit(1)
             
             base_dir = "/app/config" if os.path.exists("/app") else "./config"
