@@ -290,6 +290,7 @@ class ComposeBuilder:
         self.version = "3"
         
         if network_name:
+            self.use_external_network = True
             self.networks = {
                 "xray_net": {
                     "name": network_name,
@@ -297,6 +298,7 @@ class ComposeBuilder:
                 }
             }
         else:
+            self.use_external_network = False
             self.networks = {
                 "xray_net": {
                     "driver": "bridge"
@@ -343,10 +345,15 @@ class ComposeBuilder:
             "image": "teddysun/xray",
             "container_name": "xray",
             "volumes": ["./config.json:/etc/xray/config.json"],
-            "ports": [f"{port}:{port}"],
             "networks": ["xray_net"],
             "restart": "always"
         }
+        
+        # Only expose ports if NOT using an external network
+        # (If using external network, we assume reverse proxy or internal access)
+        if not self.use_external_network:
+            service["ports"] = [f"{port}:{port}"]
+            
         if self.xray_depends_on:
             service["depends_on"] = self.xray_depends_on
             
@@ -541,7 +548,7 @@ def main():
     print("\n✅ Xray configuration generated: config.json")
 
     # Write Docker Compose
-    filename = "docker-compose.gluetun.yaml" if settings.enable_gluetun else "docker-compose.yaml"
+    filename = "docker-compose.yaml" if settings.enable_gluetun else "docker-compose.yaml"
     compose_path = os.path.join(base_dir, filename)
     with open(compose_path, "w") as f:
         yaml.dump(compose_builder.build(), f, default_flow_style=False, sort_keys=False)
