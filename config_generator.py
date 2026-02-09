@@ -206,8 +206,7 @@ class XrayConfigBuilder:
                 "peers": [{
                     "publicKey": public_key,
                     "endpoint": f"{server_address}:{server_port}"
-                }],
-                "kernelMode": True
+                }]
             }
         })
 
@@ -333,8 +332,6 @@ class ComposeBuilder:
             "volumes": ["./config.json:/etc/xray/config.json"],
             "ports": [f"{port}:{port}"],
             "networks": ["xray_net"],
-            "cap_add": ["NET_ADMIN"],
-            "devices": ["/dev/net/tun:/dev/net/tun"],
             "restart": "always"
         }
         if self.xray_depends_on:
