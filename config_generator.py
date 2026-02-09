@@ -305,14 +305,19 @@ class ComposeBuilder:
             
         self.xray_depends_on = []
 
-    def add_gluetun_service(self, name: str, nord_private_key: str, server_hostname: str, 
-                          ss_password: str = None):
+    def add_gluetun_service(self, name: str, nord_private_key: str, 
+                          server_hostname: str = None, country: str = None, ss_password: str = None):
         env_vars = [
             "VPN_SERVICE_PROVIDER=nordvpn",
             "VPN_TYPE=wireguard",
             f"WIREGUARD_PRIVATE_KEY={nord_private_key}",
-            f"SERVER_HOSTNAME={server_hostname}",
         ]
+        
+        if server_hostname:
+            env_vars.append(f"SERVER_HOSTNAME={server_hostname}")
+        elif country:
+            # specialized for Gluetun
+            env_vars.append(f"SERVER_COUNTRIES={country}")
         
         if ss_password:
              env_vars.extend([
@@ -456,12 +461,16 @@ def main():
         sys.stdout.write(f"Processing {c_name} ({c_code})... ")
         sys.stdout.flush()
         
-        server = nord_client.get_recommended_server(country['id'])
-        if not server:
-            print("No WireGuard server found. Skipping.")
-            continue
-            
-        print(f"Server: {server['hostname']}")
+        sys.stdout.write(f"Processing {c_name} ({c_code})... ")
+        sys.stdout.flush()
+        
+        server = None
+        if not settings.enable_gluetun:
+            server = nord_client.get_recommended_server(country['id'])
+            if not server:
+                print("No WireGuard server found. Skipping.")
+                continue
+            print(f"Server: {server['hostname']}")
         
         # User Config
         email = f"{c_code.lower()}.user@example.com"
@@ -473,10 +482,11 @@ def main():
             ss_password = str(uuid.uuid4())
             
             # Add Gluetun Service (with SS)
+            # Use country name for Gluetun auto-selection
             compose_builder.add_gluetun_service(
                 name=service_name,
                 nord_private_key=settings.nord_private_key,
-                server_hostname=server['hostname'],
+                country=c_name, 
                 ss_password=ss_password
             )
             
@@ -488,6 +498,7 @@ def main():
                 method="chacha20-ietf-poly1305",
                 password=ss_password
             )
+            print(f"Gluetun Service: {service_name} (Country: {c_name})")
         else:
             # Standard WireGuard Mode
             xray_builder.add_wireguard_outbound(
